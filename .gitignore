@@ -1,0 +1,7 @@
+.pytest_cache/
+__pycache__/
+report.xml
+.vscode/
+.fleet/
+.idea/
+venv/
