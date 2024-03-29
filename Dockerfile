@@ -32,3 +32,8 @@ RUN apt install --no-install-recommends -y -q \
 
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python${PYTHON_VERSION} 2
 RUN poetry config virtualenvs.create false
+
+ADD files/run_tests.sh /usr/bin/run_tests
+RUN chmod +x /usr/bin/run_tests
+
+ADD files/testcases /testcases
