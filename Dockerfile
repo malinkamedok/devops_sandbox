@@ -16,10 +16,10 @@ RUN apt install --no-install-recommends -y -q \
     gcc \
     g++ \
     gnupg \
-    unixodbc-dev
+    unixodbc-dev \
+    jq
 
 # Install Go
-
 RUN curl -s https://dl.google.com/go/${GO_VERSION}.linux-amd64.tar.gz | tar xz -C /usr/local
 ENV PATH $PATH:/usr/local/go/bin
 
