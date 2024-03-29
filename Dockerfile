@@ -27,6 +27,8 @@ ENV PATH $PATH:/usr/local/go/bin
 ## Install Python
 RUN apt install --no-install-recommends -y -q \
   python${PYTHON_VERSION}-full \
-  python3-pip
+  python3-pip \
+  python3-poetry
 
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python${PYTHON_VERSION} 2
+RUN poetry config virtualenvs.create false
