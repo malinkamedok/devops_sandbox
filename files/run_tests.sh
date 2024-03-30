@@ -17,6 +17,10 @@ error() {
     echo -e "${RED}[ERROR] $1${NC}"
 }
 
+        # append_testcase "$SERVICE_TYPE" "$i" "$ELAPSED_TIME"
+# echo "<testsuite name=\"$TESTSUITE_NAME\" errors=\"0\" failures=\"0\" skipped=\"0\" tests=\"$TEST_COUNT\" time=\"$TESTSUITE_TIME\" timestamp=\"$TESTSUITE_TIMESTAMP\" hostname=\"$TESTSUITE_HOSTNAME\">" >> $REPORT_FILE
+   # echo "<testcase classname=\"$SERVICE_TYPE\" name=\"$i\" time=\"$ELAPSED_TIME\"/>" >> "$REPORT_FILE"
+
 mkdir -p results/{weather,currency}
 
 TESTCASES_DIR="/testcases"
@@ -75,13 +79,15 @@ export PORT=$(shuf -i 8181-9191 -n 1)
 
 debug "Allocating port $PORT"
 
+BASE_URL="http://localhost:$PORT"
+
 # nohup let's us quit process's terminal without stopping it
 nohup $COMMAND &
 sleep 2
 
 info "Figuring out which service type..."
 
-curl -X GET http://localhost:$PORT/info/ -o results/info.json >/dev/null 2>/dev/null
+curl -X GET $BASE_URL/info/ -o results/info.json >/dev/null 2>/dev/null
 
 SERVICE_TYPE=`jq -r '.service' results/info.json`
 
@@ -99,28 +105,74 @@ info "Generating test cases"
 
 info "Running tests..."
 
+# Generating report
+REPORT_FILE="report.xml"
+TESTSUITE_NAME="Leha aboba"
+TESTSUITE_TIMESTAMP=$(date +"%Y-%m-%dT%H:%M:%S.%3N") # Текущая дата и время
+TESTSUITE_HOSTNAME="DevOps"
 
-# for i in {1..10}
-for i in {1..4}
+TESTS_FAILED=0
+TEST_COUNT=`ls $TESTCASES_DIR/$SERVICE_TYPE/answer* | wc -l`
+
+echo '<?xml version="1.0" encoding="UTF-8"?>' > $REPORT_FILE
+echo "<testsuites>" >> $REPORT_FILE
+echo "<testsuite name=\"$TESTSUITE_NAME\" errors=\"0\" failures=\"0\" skipped=\"0\" tests=\"$TEST_COUNT\" time=\"0.0\" timestamp=\"$TESTSUITE_TIMESTAMP\" hostname=\"$TESTSUITE_HOSTNAME\">" >> $REPORT_FILE
+
+append_testcase() {
+    echo "    <testcase classname=\"$SERVICE_TYPE\" name=\"test_case_$i\" time=\"$ELAPSED_TIME\"/>" >> "$REPORT_FILE"
+}
+
+append_failed_testcase() {
+    echo "    <testcase classname=\"$SERVICE_TYPE\" name=\"test_case_$i\" time=\"$ELAPSED_TIME\">" >> "$REPORT_FILE"
+    echo "        <failure message=\"$ERROR_MESSAGE\"/>" >> "$REPORT_FILE"
+    echo "    </testcase>" >> "$REPORT_FILE"
+}
+
+# START_TIME=$SECONDS
+START_TIME=$(date +%s%N)
+
+for ((i=1; i<=$TEST_COUNT; i++))
 do
     PARAMS=`cat $TESTCASES_DIR/$SERVICE_TYPE/$i.params`
     # curl -X GET https://devopscourseapp-production.up.railway.app/info/$SERVICE_TYPE?$PARAMS -o results/$SERVICE_TYPE/response_$i.json >/dev/null 2>/dev/null
-    curl -X GET http://localhost:$PORT/info/$SERVICE_TYPE?$PARAMS -o results/$SERVICE_TYPE/response_$i.json >/dev/null 2>/dev/null
-    echo "URL:        http://localhost:$PORT/info/$SERVICE_TYPE?$PARAMS"
+
+    # Измерение времени выполнения curl и сохранение результата в переменную
+    TIME_RESULT=$( { time curl -X GET $BASE_URL/info/$SERVICE_TYPE?$PARAMS -o results/$SERVICE_TYPE/response_$i.json >/dev/null 2>&1; } 2>&1 )
+    ELAPSED_TIME=$(echo "$TIME_RESULT" | grep 'real' | awk '{print $2}' | sed 's/s//g' | sed 's/0m//g' )
+    TESTCASE_NAME="test_case_$i"
+
+    echo "URL:        $BASE_URL/info/$SERVICE_TYPE?$PARAMS"
     echo "Parameters: $PARAMS"
     echo "Output:"
     jq . results/$SERVICE_TYPE/response_$i.json
 
-    python $TESTCASES_DIR/compare_results.py $TESTCASES_DIR/$SERVICE_TYPE/answer_$i.json results/$SERVICE_TYPE/response_$i.json
-
+    ERROR_MESSAGE=`python $TESTCASES_DIR/compare_results.py $SERVICE_TYPE $TESTCASES_DIR/$SERVICE_TYPE/answer_$i.json results/$SERVICE_TYPE/response_$i.json`
     if [ $? -ne 0 ]; then
         error "TEST $i FAILED"
-        debug "Stopping server"
-        kill $(pgrep -f `realpath "$MAIN_FILE"`)
-        exit 1
+        TESTS_FAILED=$TESTS_FAILED+1
+        append_failed_testcase "$SERVICE_TYPE" "$i" "$ELAPSED_TIME" "$ERROR_MESSAGE"
+
+        # kill $(pgrep -f `realpath "$MAIN_FILE"`)
+        # exit 1
+    else
+        info "TEST $i PASSED"
+        append_testcase "$SERVICE_TYPE" "$i" "$ELAPSED_TIME"
     fi
-    info "TEST $i PASSED"
+    echo "Real time: $ELAPSED_TIME"
 done
+
+END_TIME=$(date +%s%N)
+TOTAL_TIME=$(echo "scale=3; ($END_TIME - $START_TIME)/1000000000" | bc)
+
+debug $TOTAL_TIME_STRING
+
+echo "</testsuite>" >> $REPORT_FILE
+echo "</testsuites>" >> $REPORT_FILE
+
+xmlstarlet ed --inplace -u "//testsuite/@failures" -x "$TESTS_FAILED" $REPORT_FILE
+xmlstarlet ed --inplace -u "//testsuite/@time" -x "$TOTAL_TIME" $REPORT_FILE
+
+info "JUnit report generated: $REPORT_FILE"
 
 debug "Stopping server"
 

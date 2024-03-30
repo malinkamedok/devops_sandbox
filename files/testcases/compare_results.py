@@ -24,6 +24,7 @@ def deep_compare(obj1, obj2, threshold=0.05):
 
 def main():
     parser = argparse.ArgumentParser(description='Compare two JSON files deeply with a threshold for numbers.')
+    parser.add_argument('service_type', type=str, help='Service type (currency ot weather)')
     parser.add_argument('answer', type=str, help='Path to the first JSON file')
     parser.add_argument('student', type=str, help='Path to the second JSON file')
     args = parser.parse_args()
@@ -35,10 +36,16 @@ def main():
         print("One or both JSON files were not found.")
         sys.exit(1)
 
-    if deep_compare(answer, student):
+    if "data" not in student:
+        print("Response should contain 'data' key")
+        sys.exit(1)
+
+
+    if deep_compare(answer["data"], student["data"]):
         print("The JSON files are deeply equal.")
     else:
-        print("The JSON files are NOT deeply equal.")
+        print(args.service_type)
+        # print("The JSON files are NOT deeply equal.")
         sys.exit(1)
 
 
