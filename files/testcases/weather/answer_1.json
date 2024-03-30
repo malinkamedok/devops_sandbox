@@ -1,0 +1,26 @@
+{
+    "data": {
+        "city": "SaintPetersburg",
+        "from": "2024-03-20",
+        "to": "2024-06-21",
+        "temperature_c": {
+            "average": 9.562765957446809,
+            "median": 9.8,
+            "min": -7.1,
+            "max": 21
+        },
+        "humidity": {
+            "average": 22.164064716312055,
+            "median": 78.845,
+            "min": 43.91,
+            "max": 100
+        },
+        "pressure_mb": {
+            "average": 268.3698581560284,
+            "median": 999,
+            "min": 989,
+            "max": 1027.7
+        }
+    },
+    "service": "weather"
+}
