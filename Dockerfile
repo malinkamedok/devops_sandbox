@@ -6,6 +6,7 @@ RUN apt update -y -q && apt upgrade -y -q
 ENV DEBIAN_FRONTEND noninteractive
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+ENV TZ Europe/Moscow
 
 RUN apt install --no-install-recommends -y -q \
     curl \

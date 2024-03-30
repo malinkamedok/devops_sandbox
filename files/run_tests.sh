@@ -107,7 +107,6 @@ info "Running tests..."
 
 # Generating report
 REPORT_FILE="report.xml"
-TESTSUITE_NAME="Leha aboba"
 TESTSUITE_TIMESTAMP=$(date +"%Y-%m-%dT%H:%M:%S.%3N") # Текущая дата и время
 TESTSUITE_HOSTNAME="DevOps"
 
@@ -116,7 +115,7 @@ TEST_COUNT=`ls $TESTCASES_DIR/$SERVICE_TYPE/answer* | wc -l`
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' > $REPORT_FILE
 echo "<testsuites>" >> $REPORT_FILE
-echo "<testsuite name=\"$TESTSUITE_NAME\" errors=\"0\" failures=\"0\" skipped=\"0\" tests=\"$TEST_COUNT\" time=\"0.0\" timestamp=\"$TESTSUITE_TIMESTAMP\" hostname=\"$TESTSUITE_HOSTNAME\">" >> $REPORT_FILE
+echo "<testsuite name=\"$SERVICE_TYPE\" errors=\"0\" failures=\"0\" skipped=\"0\" tests=\"$TEST_COUNT\" time=\"0.0\" timestamp=\"$TESTSUITE_TIMESTAMP\" hostname=\"$TESTSUITE_HOSTNAME\">" >> $REPORT_FILE
 
 append_testcase() {
     echo "    <testcase classname=\"$SERVICE_TYPE\" name=\"test_case_$i\" time=\"$ELAPSED_TIME\"/>" >> "$REPORT_FILE"
