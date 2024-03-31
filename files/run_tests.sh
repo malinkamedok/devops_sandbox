@@ -17,9 +17,19 @@ error() {
     echo -e "${RED}[ERROR] $1${NC}"
 }
 
-        # append_testcase "$SERVICE_TYPE" "$i" "$ELAPSED_TIME"
-# echo "<testsuite name=\"$TESTSUITE_NAME\" errors=\"0\" failures=\"0\" skipped=\"0\" tests=\"$TEST_COUNT\" time=\"$TESTSUITE_TIME\" timestamp=\"$TESTSUITE_TIMESTAMP\" hostname=\"$TESTSUITE_HOSTNAME\">" >> $REPORT_FILE
-   # echo "<testcase classname=\"$SERVICE_TYPE\" name=\"$i\" time=\"$ELAPSED_TIME\"/>" >> "$REPORT_FILE"
+stop_server() {
+    echo "</testsuite>" >> $REPORT_FILE
+    echo "</testsuites>" >> $REPORT_FILE
+
+    xmlstarlet ed --inplace -u "//testsuite/@failures" -x "$TESTS_FAILED" $REPORT_FILE
+    xmlstarlet ed --inplace -u "//testsuite/@time" -x "$TOTAL_TIME" $REPORT_FILE
+
+    info "JUnit report generated: $REPORT_FILE"
+
+    debug "Stopping server"
+
+    kill $(pgrep -f `realpath "$MAIN_FILE"`)
+}
 
 mkdir -p results/{weather,currency}
 
@@ -176,8 +186,24 @@ do
         echo "Parameters: $PARAMS$YYYY-$MM-$DD"
     else
         ADDITIONAL=`cat $TESTCASES_DIR/$SERVICE_TYPE/additional.live`
+        RESPONSE_FILE="results/$SERVICE_TYPE/live_response_$i.json"
+        MAX_ATTEMPTS=5
 
-        curl -X GET https://devopscourseapp-production.up.railway.app/info/$SERVICE_TYPE?$PARAMS$YYYY-$MM-$DD$ADDITIONAL$YYYY-$MM-$DD_TO -o results/$SERVICE_TYPE/live_response_$i.json >/dev/null 2>/dev/null
+        for ((i=1; i<=MAX_ATTEMPTS; i++)); do
+            curl -X GET "https://devopscourseapp-production.up.railway.app/info/$SERVICE_TYPE?$PARAMS$YYYY-$MM-$DD$ADDITIONAL$YYYY-$MM-$DD_TO" -o $RESPONSE_FILE >/dev/null 2>/dev/null
+
+            if jq -e `.error == "You have exceeded the maximum number of daily result records for your account. Please add a credit card to continue retrieving results."` $RESPONSE_FILE >/dev/null; then
+                echo "All API keys for the verification process have been exceeded. Attempt $i of $MAX_ATTEMPTS. Trying another one..."
+            else
+                break
+            fi
+
+            if [ $i -eq $MAX_ATTEMPTS ]; then
+                echo "Maximum number of attempts have been reached. Please try again tomorrow."
+
+                stop_server
+            fi
+        done
 
         TIME_RESULT=$( { time curl -X GET $BASE_URL/info/$SERVICE_TYPE?$PARAMS$YYYY-$MM-$DD$ADDITIONAL$YYYY-$MM-$DD_TO -o results/$SERVICE_TYPE/live_response_$i.json >/dev/null 2>&1; } 2>&1 )
 
@@ -212,14 +238,4 @@ else
     info "Not all tests were passed. Keep going!"
 fi
 
-echo "</testsuite>" >> $REPORT_FILE
-echo "</testsuites>" >> $REPORT_FILE
-
-xmlstarlet ed --inplace -u "//testsuite/@failures" -x "$TESTS_FAILED" $REPORT_FILE
-xmlstarlet ed --inplace -u "//testsuite/@time" -x "$TOTAL_TIME" $REPORT_FILE
-
-info "JUnit report generated: $REPORT_FILE"
-
-debug "Stopping server"
-
-kill $(pgrep -f `realpath "$MAIN_FILE"`)
+stop_server
