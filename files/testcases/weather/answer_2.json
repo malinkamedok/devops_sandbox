@@ -1,25 +1,25 @@
 {
     "data": {
         "city": "Arkhangelsk",
-        "from": "2021-01-01",
-        "to": "2021-01-20",
+        "date_from": "2021-01-01",
+        "date_to": "2021-01-02",
         "temperature_c": {
-            "average": -16.685,
-            "median": -21.8,
-            "min": -36,
+            "average": -6.4,
+            "median": -6.4,
+            "min": -8.2,
             "max": -4
         },
         "humidity": {
-            "average": 83.45110416666677,
-            "median": 82.25999999999999,
-            "min": 66.79,
+            "average": 89.78979166666664,
+            "median": 85.94999999999999,
+            "min": 85.52,
             "max": 97.37
         },
         "pressure_mb": {
-            "average": 1023.1089583333335,
-            "median": 1028.4,
-            "min": 1003,
-            "max": 1036.4
+            "average": 1021.46875,
+            "median": 1022.25,
+            "min": 1019,
+            "max": 1022.6
         }
     },
     "service": "weather"

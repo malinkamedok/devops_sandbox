@@ -17,24 +17,31 @@ error() {
     echo -e "${RED}[ERROR] $1${NC}"
 }
 
-stop_server() {
-    echo "</testsuite>" >> $REPORT_FILE
-    echo "</testsuites>" >> $REPORT_FILE
+send_telegram_alert() {
+    ### debug. all data should be taken from env
+    BOT_API_TOKEN="000000000:gegrergervreRGVFWERVevervEEWV"
+    CHAT_ID="-22822822822822"
+    CI_PROJECT_NAME="p.solovev"
+    MESSAGE=$(echo -e "Student: $CI_PROJECT_NAME\nService: $SERVICE_TYPE\nTests failed: $TESTS_FAILED.\n" | jq -sRr @uri)
 
-    xmlstarlet ed --inplace -u "//testsuite/@failures" -x "$TESTS_FAILED" $REPORT_FILE
-    xmlstarlet ed --inplace -u "//testsuite/@time" -x "$TOTAL_TIME" $REPORT_FILE
+    if [ -n "$BOT_API_TOKEN" ]; then
+        curl -X POST "https://api.telegram.org/bot$BOT_API_TOKEN/sendMessage" -d "chat_id=$CHAT_ID&text=$MESSAGE" >/dev/null 2>/dev/null
+        echo
+    fi
+}
 
-    info "JUnit report generated: $REPORT_FILE"
-
-    debug "Stopping server"
-
-    kill $(pgrep -f `realpath "$MAIN_FILE"`)
+prepare_artifacts() {
+    debug "Preparing job artifacts"
+    ARTIFACTS_DIR="job_artifacts"
+    mkdir -p $ARTIFACTS_DIR
+    cp nohup.out $ARTIFACTS_DIR/server.log
+    cp -r results/$SERVICE_TYPE $ARTIFACTS_DIR/responses
 }
 
 mkdir -p results/{weather,currency}
 
 TESTCASES_DIR="/testcases"
-PYTHON_FILE=`find . -name "main.py" -type f`
+PYTHON_FILE=$(find . -name "main.py" -type f | grep -v 'venv')
 GO_FILE=`find . -name "main.go" -type f`
 MAIN_FILE=""
 COMMAND=""
@@ -49,12 +56,14 @@ if [ -n "$PYTHON_FILE" ] && [ -f "$PYTHON_FILE" ]; then
     MAIN_FILE="$PYTHON_FILE"
     # Check if requirements.txt exists in the current directory
     if [ -f requirements.txt ]; then
-        debug "requirements.txt found. Installing dependencies with pip..."
+        debug "requirements.txt found. Installing dependencies via pip..."
+        rm -rf venv
+        python -m venv venv
+        source ./venv/bin/activate
         pip install -r requirements.txt
-    fi
     # Check if pyproject.toml exists in the current directory
-    if [ -f pyproject.toml ]; then
-        debug "pyproject.toml found. Installing dependencies with Poetry..."
+    elif [ -f pyproject.toml ]; then
+        debug "pyproject.toml found. Installing dependencies via Poetry..."
         if ! command -v poetry &> /dev/null; then
             error "Poetry not found. Exiting..."
         fi
@@ -63,7 +72,8 @@ if [ -n "$PYTHON_FILE" ] && [ -f "$PYTHON_FILE" ]; then
         error "Neither requirements.txt nor pyproject.toml found. Skipping installation."
         exit 1
     fi
-    COMMAND=""
+    COMMAND="python $MAIN_FILE"
+    MAIN_FILE=`realpath $PYTHON_FILE`
 fi
 
 if [ -n "$GO_FILE" ] && [ -f "$GO_FILE" ]; then
@@ -85,6 +95,28 @@ if [ -n "$GO_FILE" ] && [ -f "$GO_FILE" ]; then
     COMMAND="$MAIN_FILE"
 fi
 
+stop_server() {
+    END_TIME=$(date +%s%N)
+    TOTAL_TIME=$(echo "scale=3; ($END_TIME - $START_TIME)/1000000000" | bc)
+
+    echo "</testsuite>" >> $REPORT_FILE
+    echo "</testsuites>" >> $REPORT_FILE
+
+    xmlstarlet ed --inplace -u "//testsuite/@failures" -x "$TESTS_FAILED" $REPORT_FILE
+    xmlstarlet ed --inplace -u "//testsuite/@time" -x "$TOTAL_TIME" $REPORT_FILE
+    xmlstarlet ed --inplace -u "//testsuite/@tests" -x "$TEST_COUNT" $REPORT_FILE
+
+    info "JUnit report generated: $REPORT_FILE"
+
+    debug "Stopping server"
+
+    kill $(pgrep -f "$COMMAND")
+
+    send_telegram_alert
+
+    prepare_artifacts
+}
+
 export PORT=$(shuf -i 8181-9191 -n 1)
 
 debug "Allocating port $PORT"
@@ -93,11 +125,12 @@ BASE_URL="http://localhost:$PORT"
 
 # nohup let's us quit process's terminal without stopping it
 nohup $COMMAND &
-sleep 2
+
+sleep 5
 
 info "Figuring out which service type..."
 
-curl -X GET $BASE_URL/info/ -o results/info.json >/dev/null 2>/dev/null
+curl -X GET $BASE_URL/info -o results/info.json >/dev/null 2>/dev/null
 
 SERVICE_TYPE=`jq -r '.service' results/info.json`
 
@@ -116,7 +149,8 @@ TESTSUITE_TIMESTAMP=$(date +"%Y-%m-%dT%H:%M:%S.%3N") # Текущая дата �
 TESTSUITE_HOSTNAME="DevOps"
 
 TESTS_FAILED=0
-TEST_COUNT=`ls $TESTCASES_DIR/$SERVICE_TYPE/answer* | wc -l`
+TEST_COUNT=0
+STATIC_TEST_COUNT=`ls $TESTCASES_DIR/$SERVICE_TYPE/answer* | wc -l`
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' > $REPORT_FILE
 echo "<testsuites>" >> $REPORT_FILE
@@ -132,15 +166,13 @@ append_failed_testcase() {
     echo "    </testcase>" >> "$REPORT_FILE"
 }
 
-# START_TIME=$SECONDS
 START_TIME=$(date +%s%N)
 
-for ((i=1; i<=$TEST_COUNT; i++))
+for ((i=1; i<=$STATIC_TEST_COUNT; i++))
 do
+    TEST_COUNT=$((TEST_COUNT+1))
     PARAMS=`cat $TESTCASES_DIR/$SERVICE_TYPE/$i.params`
-    # curl -X GET https://devopscourseapp-production.up.railway.app/info/$SERVICE_TYPE?$PARAMS -o results/$SERVICE_TYPE/response_$i.json >/dev/null 2>/dev/null
 
-    # Измерение времени выполнения curl и сохранение результата в переменную
     TIME_RESULT=$( { time curl -X GET $BASE_URL/info/$SERVICE_TYPE?$PARAMS -o results/$SERVICE_TYPE/response_$i.json >/dev/null 2>&1; } 2>&1 )
     ELAPSED_TIME=$(echo "$TIME_RESULT" | grep 'real' | awk '{print $2}' | sed 's/s//g' | sed 's/0m//g' )
     TESTCASE_NAME="test_case_$i"
@@ -148,22 +180,25 @@ do
     echo "URL:        $BASE_URL/info/$SERVICE_TYPE?$PARAMS"
     echo "Parameters: $PARAMS"
     echo "Output:"
-    jq . results/$SERVICE_TYPE/response_$i.json
+    jq . results/$SERVICE_TYPE/response_$i.json 2>/dev/null || cat results/$SERVICE_TYPE/response_$i.json
+    echo
 
     ERROR_MESSAGE=`python $TESTCASES_DIR/compare_results.py $SERVICE_TYPE $TESTCASES_DIR/$SERVICE_TYPE/answer_$i.json results/$SERVICE_TYPE/response_$i.json`
     if [ $? -ne 0 ]; then
         error "TEST $i FAILED"
         TESTS_FAILED=$((TESTS_FAILED+1))
         append_failed_testcase "$SERVICE_TYPE" "$TESTCASE_NAME" "$ELAPSED_TIME" "$ERROR_MESSAGE"
-
-        # kill $(pgrep -f `realpath "$MAIN_FILE"`)
-        # exit 1
     else
         info "TEST $i PASSED"
         append_testcase "$SERVICE_TYPE" "$TESTCASE_NAME" "$ELAPSED_TIME"
     fi
     echo "Real time: $ELAPSED_TIME"
 done
+
+if [ "$SERVICE_TYPE" == "weather" ] && [ "$TESTS_FAILED" -ne 0 ]; then
+    stop_server
+    exit 1
+fi
 
 info "Static tests ended. Generating live tests..."
 
@@ -186,26 +221,30 @@ do
         echo "Parameters: $PARAMS$YYYY-$MM-$DD"
     else
         ADDITIONAL=`cat $TESTCASES_DIR/$SERVICE_TYPE/additional.live`
-        RESPONSE_FILE="results/$SERVICE_TYPE/live_response_$i.json"
-        MAX_ATTEMPTS=5
+        RESPONSE_FILE="results/$SERVICE_TYPE/live_answer_$i.json"
+        MAX_ATTEMPTS=7
 
-        for ((i=1; i<=MAX_ATTEMPTS; i++)); do
+        for ((j=1; j<=MAX_ATTEMPTS; j++)); do
             curl -X GET "https://devopscourseapp-production.up.railway.app/info/$SERVICE_TYPE?$PARAMS$YYYY-$MM-$DD$ADDITIONAL$YYYY-$MM-$DD_TO" -o $RESPONSE_FILE >/dev/null 2>/dev/null
 
-            if jq -e `.error == "You have exceeded the maximum number of daily result records for your account. Please add a credit card to continue retrieving results."` $RESPONSE_FILE >/dev/null; then
-                echo "All API keys for the verification process have been exceeded. Attempt $i of $MAX_ATTEMPTS. Trying another one..."
+            # if echo curl -f != 0
+            if jq -e '.error == "You have exceeded the maximum number of daily result records for your account. Please add a credit card to continue retrieving results."' $RESPONSE_FILE >/dev/null; then
+                echo "API key for the verification process has been exceeded. Attempt $j of $MAX_ATTEMPTS. Trying another one..."
             else
                 break
             fi
 
-            if [ $i -eq $MAX_ATTEMPTS ]; then
+            if [ $j -eq $MAX_ATTEMPTS ]; then
                 echo "Maximum number of attempts have been reached. Please try again tomorrow."
 
                 stop_server
+                exit 1
             fi
         done
 
         TIME_RESULT=$( { time curl -X GET $BASE_URL/info/$SERVICE_TYPE?$PARAMS$YYYY-$MM-$DD$ADDITIONAL$YYYY-$MM-$DD_TO -o results/$SERVICE_TYPE/live_response_$i.json >/dev/null 2>&1; } 2>&1 )
+
+        TEST_COUNT=$((TEST_COUNT+1))
 
         echo "URL:        $BASE_URL/info/$SERVICE_TYPE?$PARAMS$YYYY-$MM-$DD$ADDITIONAL$YYYY-$MM-$DD_TO"
         echo "Parameters: $PARAMS$YYYY-$MM-$DD$ADDITIONAL$YYYY-$MM-$DD_TO"
@@ -215,7 +254,8 @@ do
     TESTCASE_NAME="live_test_case_$i"
 
     echo "Output:"
-    jq . results/$SERVICE_TYPE/live_response_$i.json
+    jq . results/$SERVICE_TYPE/live_response_$i.json 2>/dev/null || cat results/$SERVICE_TYPE/live_response_$i.json
+    echo
 
     ERROR_MESSAGE=`python $TESTCASES_DIR/compare_results.py $SERVICE_TYPE $TESTCASES_DIR/$SERVICE_TYPE/live_answer_$i.json results/$SERVICE_TYPE/live_response_$i.json`
     if [ $? -ne 0 ]; then
@@ -228,9 +268,6 @@ do
     fi
     echo "Real time: $ELAPSED_TIME"
 done
-
-END_TIME=$(date +%s%N)
-TOTAL_TIME=$(echo "scale=3; ($END_TIME - $START_TIME)/1000000000" | bc)
 
 if [ $TESTS_FAILED -eq 0 ]; then
     info "Congratulations! All tests passed!"

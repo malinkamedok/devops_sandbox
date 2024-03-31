@@ -1,8 +1,8 @@
 {
     "data": {
         "city": "Yaroslavl",
-        "from": "2022-05-10",
-        "to": "2022-05-11",
+        "date_from": "2022-05-10",
+        "date_to": "2022-05-11",
         "temperature_c": {
             "average": 10.350000000000001,
             "median": 10.350000000000001,

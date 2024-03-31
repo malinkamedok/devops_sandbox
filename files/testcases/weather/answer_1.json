@@ -1,8 +1,8 @@
 {
     "data": {
         "city": "SaintPetersburg",
-        "from": "2024-03-20",
-        "to": "2024-06-21",
+        "date_from": "2024-03-20",
+        "date_to": "2024-06-21",
         "temperature_c": {
             "average": 9.562765957446809,
             "median": 9.8,

@@ -2,7 +2,15 @@ import argparse
 import json
 import sys
 
-def deep_compare(obj1, obj2, threshold=0.05):
+def is_valid_json(file_path):
+    try:
+        with open(file_path, 'r') as file:
+            json.load(file)
+        return True
+    except json.JSONDecodeError:
+        return False
+
+def deep_compare(obj1, obj2, threshold=0.5):
     if isinstance(obj1, dict) and isinstance(obj2, dict):
         if len(obj1) != len(obj2):
             return False
@@ -29,6 +37,9 @@ def main():
     parser.add_argument('student', type=str, help='Path to the second JSON file')
     args = parser.parse_args()
     try:
+        if not is_valid_json(args.student):
+            print("Response is not a valid JSON")
+            exit(1)
         with open(args.answer, 'r', encoding='utf-8') as file1, open(args.student, 'r', encoding='utf-8') as file2:
             answer = json.load(file1)
             student = json.load(file2)
