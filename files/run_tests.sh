@@ -98,12 +98,7 @@ fi
 
 debug "SERVICE_TYPE=$SERVICE_TYPE"
 
-
-info "Generating test cases"
-
-# TODO
-
-info "Running tests..."
+info "Running static tests..."
 
 # Generating report
 REPORT_FILE="report.xml"
@@ -118,11 +113,11 @@ echo "<testsuites>" >> $REPORT_FILE
 echo "<testsuite name=\"$SERVICE_TYPE\" errors=\"0\" failures=\"0\" skipped=\"0\" tests=\"$TEST_COUNT\" time=\"0.0\" timestamp=\"$TESTSUITE_TIMESTAMP\" hostname=\"$TESTSUITE_HOSTNAME\">" >> $REPORT_FILE
 
 append_testcase() {
-    echo "    <testcase classname=\"$SERVICE_TYPE\" name=\"test_case_$i\" time=\"$ELAPSED_TIME\"/>" >> "$REPORT_FILE"
+    echo "    <testcase classname=\"$SERVICE_TYPE\" name=\"$TESTCASE_NAME\" time=\"$ELAPSED_TIME\"/>" >> "$REPORT_FILE"
 }
 
 append_failed_testcase() {
-    echo "    <testcase classname=\"$SERVICE_TYPE\" name=\"test_case_$i\" time=\"$ELAPSED_TIME\">" >> "$REPORT_FILE"
+    echo "    <testcase classname=\"$SERVICE_TYPE\" name=\"$TESTCASE_NAME\" time=\"$ELAPSED_TIME\">" >> "$REPORT_FILE"
     echo "        <failure message=\"$ERROR_MESSAGE\"/>" >> "$REPORT_FILE"
     echo "    </testcase>" >> "$REPORT_FILE"
 }
@@ -148,14 +143,62 @@ do
     ERROR_MESSAGE=`python $TESTCASES_DIR/compare_results.py $SERVICE_TYPE $TESTCASES_DIR/$SERVICE_TYPE/answer_$i.json results/$SERVICE_TYPE/response_$i.json`
     if [ $? -ne 0 ]; then
         error "TEST $i FAILED"
-        TESTS_FAILED=$TESTS_FAILED+1
-        append_failed_testcase "$SERVICE_TYPE" "$i" "$ELAPSED_TIME" "$ERROR_MESSAGE"
+        TESTS_FAILED=$((TESTS_FAILED+1))
+        append_failed_testcase "$SERVICE_TYPE" "$TESTCASE_NAME" "$ELAPSED_TIME" "$ERROR_MESSAGE"
 
         # kill $(pgrep -f `realpath "$MAIN_FILE"`)
         # exit 1
     else
         info "TEST $i PASSED"
-        append_testcase "$SERVICE_TYPE" "$i" "$ELAPSED_TIME"
+        append_testcase "$SERVICE_TYPE" "$TESTCASE_NAME" "$ELAPSED_TIME"
+    fi
+    echo "Real time: $ELAPSED_TIME"
+done
+
+info "Static tests ended. Generating live tests..."
+
+for i in {1..2}
+do
+    YYYY=$(shuf -i 2017-2023 -n 1)
+    MM=$(printf "%02d" $(shuf -i 1-12 -n 1))
+    DD=$(shuf -i 1-26 -n 1)
+    DD_TO=$(printf "%02d" $((DD + $(shuf -i 1-2 -n 1))))
+    DD=$(printf "%02d" $DD)
+
+    PARAMS=`cat $TESTCASES_DIR/$SERVICE_TYPE/$i.params.live`
+
+    if [ "$SERVICE_TYPE" == "currency" ]; then
+        curl -X GET https://devopscourseapp-production.up.railway.app/info/$SERVICE_TYPE?$PARAMS$YYYY-$MM-$DD -o $TESTCASES_DIR/$SERVICE_TYPE/live_answer_$i.json >/dev/null 2>/dev/null
+
+        TIME_RESULT=$( { time curl -X GET $BASE_URL/info/$SERVICE_TYPE?$PARAMS$YYYY-$MM-$DD -o results/$SERVICE_TYPE/live_response_$i.json >/dev/null 2>&1; } 2>&1 )
+
+        echo "URL:        $BASE_URL/info/$SERVICE_TYPE?$PARAMS$YYYY-$MM-$DD"
+        echo "Parameters: $PARAMS$YYYY-$MM-$DD"
+    else
+        ADDITIONAL=`cat $TESTCASES_DIR/$SERVICE_TYPE/additional.live`
+
+        curl -X GET https://devopscourseapp-production.up.railway.app/info/$SERVICE_TYPE?$PARAMS$YYYY-$MM-$DD$ADDITIONAL$YYYY-$MM-$DD_TO -o results/$SERVICE_TYPE/live_response_$i.json >/dev/null 2>/dev/null
+
+        TIME_RESULT=$( { time curl -X GET $BASE_URL/info/$SERVICE_TYPE?$PARAMS$YYYY-$MM-$DD$ADDITIONAL$YYYY-$MM-$DD_TO -o results/$SERVICE_TYPE/live_response_$i.json >/dev/null 2>&1; } 2>&1 )
+
+        echo "URL:        $BASE_URL/info/$SERVICE_TYPE?$PARAMS$YYYY-$MM-$DD$ADDITIONAL$YYYY-$MM-$DD_TO"
+        echo "Parameters: $PARAMS$YYYY-$MM-$DD$ADDITIONAL$YYYY-$MM-$DD_TO"
+    fi
+
+    ELAPSED_TIME=$(echo "$TIME_RESULT" | grep 'real' | awk '{print $2}' | sed 's/s//g' | sed 's/0m//g' )
+    TESTCASE_NAME="live_test_case_$i"
+
+    echo "Output:"
+    jq . results/$SERVICE_TYPE/live_response_$i.json
+
+    ERROR_MESSAGE=`python $TESTCASES_DIR/compare_results.py $SERVICE_TYPE $TESTCASES_DIR/$SERVICE_TYPE/live_answer_$i.json results/$SERVICE_TYPE/live_response_$i.json`
+    if [ $? -ne 0 ]; then
+        error "LIVE TEST $i FAILED"
+        TESTS_FAILED=$((TESTS_FAILED+1))
+        append_failed_testcase "$SERVICE_TYPE" "$TESTCASE_NAME" "$ELAPSED_TIME" "$ERROR_MESSAGE"
+    else
+        info "LIVE TEST $i PASSED"
+        append_testcase "$SERVICE_TYPE" "$TESTCASE_NAME" "$ELAPSED_TIME"
     fi
     echo "Real time: $ELAPSED_TIME"
 done
@@ -163,7 +206,11 @@ done
 END_TIME=$(date +%s%N)
 TOTAL_TIME=$(echo "scale=3; ($END_TIME - $START_TIME)/1000000000" | bc)
 
-debug $TOTAL_TIME_STRING
+if [ $TESTS_FAILED -eq 0 ]; then
+    info "Congratulations! All tests passed!"
+else
+    info "Not all tests were passed. Keep going!"
+fi
 
 echo "</testsuite>" >> $REPORT_FILE
 echo "</testsuites>" >> $REPORT_FILE
