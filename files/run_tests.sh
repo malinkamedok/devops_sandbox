@@ -31,8 +31,8 @@ send_telegram_alert() {
 
 prepare_artifacts() {
     debug "Preparing job artifacts"
-    mv nohup.out server.log
-    mv -r results/$SERVICE_TYPE responses
+    mv results/$SERVICE_TYPE responses
+    rm -rf results
 }
 
 mkdir -p results/{weather,currency}
