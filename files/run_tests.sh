@@ -134,13 +134,14 @@ curl -X GET $BASE_URL/info -o results/info.json >/dev/null 2>/dev/null
 
 jq . results/info.json || (cat results/info.json && echo)
 
+
 SERVICE_TYPE=`jq -r '.service' results/info.json`
-if [ -z "$SERVICE_TYPE" ] || [ $SERVICE_TYPE == "null"] || [ $SERVICE_TYPE == "None"]; then
+debug "SERVICE_TYPE=$SERVICE_TYPE"
+if [ -z "$SERVICE_TYPE" ] || [ "$SERVICE_TYPE" == "null"] || [ "$SERVICE_TYPE" == "None"]; then
     error "No service type provided"
     exit 1
 fi
 
-debug "SERVICE_TYPE=$SERVICE_TYPE"
 
 if [ $SERVICE_TYPE == "weather"] && [ -z "$API_KEY" ]; then
     error "Environment variable API_KEY must not be empty. Add it to Settings > CI/CD > Variables"
