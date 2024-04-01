@@ -137,7 +137,7 @@ jq . results/info.json || (cat results/info.json && echo)
 
 SERVICE_TYPE=`jq -r '.service' results/info.json`
 debug "SERVICE_TYPE=$SERVICE_TYPE"
-if [ "$SERVICE_TYPE" != "weather" ] || [ "$SERVICE_TYPE" != "currency" ]; then
+if [ "$SERVICE_TYPE" != "weather" ] && [ "$SERVICE_TYPE" != "currency" ]; then
     error "Wrong or empty service type provided"
     exit 1
 fi
