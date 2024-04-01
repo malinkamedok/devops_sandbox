@@ -31,10 +31,8 @@ send_telegram_alert() {
 
 prepare_artifacts() {
     debug "Preparing job artifacts"
-    ARTIFACTS_DIR="job_artifacts"
-    mkdir -p $ARTIFACTS_DIR
-    cp nohup.out $ARTIFACTS_DIR/server.log
-    cp -r results/$SERVICE_TYPE $ARTIFACTS_DIR/responses
+    mv nohup.out server.log
+    mv -r results/$SERVICE_TYPE responses
 }
 
 mkdir -p results/{weather,currency}
@@ -65,6 +63,7 @@ if [ -n "$PYTHON_FILE" ] && [ -f "$PYTHON_FILE" ]; then
         debug "pyproject.toml found. Installing dependencies via Poetry..."
         if ! command -v poetry &> /dev/null; then
             error "Poetry not found. Exiting..."
+            exit 1
         fi
         poetry install
     else
@@ -129,11 +128,13 @@ nohup $COMMAND &
 sleep 5
 
 info "Figuring out which service type..."
+debug "curl -X GET $BASE_URL/info -o results/info.json"
 
 curl -X GET $BASE_URL/info -o results/info.json >/dev/null 2>/dev/null
 
-SERVICE_TYPE=`jq -r '.service' results/info.json`
+jq . results/info.json || (cat results/info.json && echo)
 
+SERVICE_TYPE=`jq -r '.service' results/info.json`
 if [ -z "$SERVICE_TYPE" ]; then
     error "No service type provided"
     exit 1
@@ -275,7 +276,7 @@ done
 if [ $TESTS_FAILED -eq 0 ]; then
     info "Congratulations! All tests passed!"
 else
-    info "Not all tests were passed. Keep going!"
+    echo -e "${RED}Not all tests were passed. Keep going!${NC}"
 fi
 
 stop_server
