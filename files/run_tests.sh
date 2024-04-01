@@ -135,7 +135,7 @@ curl -X GET $BASE_URL/info -o results/info.json >/dev/null 2>/dev/null
 jq . results/info.json || (cat results/info.json && echo)
 
 SERVICE_TYPE=`jq -r '.service' results/info.json`
-if [ -z "$SERVICE_TYPE" ]; then
+if [ -z "$SERVICE_TYPE" ] || [ $SERVICE_TYPE == "null"] || [ $SERVICE_TYPE == "None"]; then
     error "No service type provided"
     exit 1
 fi
