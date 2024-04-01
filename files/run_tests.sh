@@ -137,13 +137,13 @@ jq . results/info.json || (cat results/info.json && echo)
 
 SERVICE_TYPE=`jq -r '.service' results/info.json`
 debug "SERVICE_TYPE=$SERVICE_TYPE"
-if [ -z "$SERVICE_TYPE" ] || [ "$SERVICE_TYPE" == "null"] || [ "$SERVICE_TYPE" == "None"]; then
-    error "No service type provided"
+if [ "$SERVICE_TYPE" != "weather" ] || [ "$SERVICE_TYPE" != "currency" ]; then
+    error "Wrong or empty service type provided"
     exit 1
 fi
 
 
-if [ $SERVICE_TYPE == "weather"] && [ -z "$API_KEY" ]; then
+if [ $SERVICE_TYPE == "weather" ] && [ -z "$API_KEY" ]; then
     error "Environment variable API_KEY must not be empty. Add it to Settings > CI/CD > Variables"
     exit 1
 fi
