@@ -1,25 +1,10 @@
 {
     "data": {
-        "city": "NizhnyNovgorod",
-        "date_from": "2017-12-12",
-        "date_to": "2017-12-13",
         "temperature_c": {
             "average": 0.85,
             "median": 0.85,
             "min": -0.4,
             "max": 3
-        },
-        "humidity": {
-            "average": 94.07020833333335,
-            "median": 93.63499999999999,
-            "min": 80.08,
-            "max": 100
-        },
-        "pressure_mb": {
-            "average": 1015.5458333333335,
-            "median": 1018.25,
-            "min": 1012,
-            "max": 1019.6
         }
     },
     "service": "weather"

@@ -1,25 +1,10 @@
 {
     "data": {
-        "city": "Yaroslavl",
-        "date_from": "2022-05-10",
-        "date_to": "2022-05-11",
         "temperature_c": {
             "average": 10.350000000000001,
             "median": 10.350000000000001,
             "min": 4,
             "max": 17
-        },
-        "humidity": {
-            "average": 42.18895833333333,
-            "median": 41.37,
-            "min": 29.37,
-            "max": 64.9
-        },
-        "pressure_mb": {
-            "average": 1011.4166666666666,
-            "median": 1011.5,
-            "min": 1005,
-            "max": 1018
         }
     },
     "service": "weather"

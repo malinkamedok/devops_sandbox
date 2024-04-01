@@ -1,25 +1,10 @@
 {
     "data": {
-        "city": "YoshkarOla",
-        "date_from": "2010-09-11",
-        "date_to": "2010-09-12",
         "temperature_c": {
             "average": 12.25,
             "median": 12.25,
             "min": 5.1,
             "max": 18.1
-        },
-        "humidity": {
-            "average": 66.04000000000002,
-            "median": 73.655,
-            "min": 41.45,
-            "max": 93.6
-        },
-        "pressure_mb": {
-            "average": 1024.4916666666666,
-            "median": 1025.1,
-            "min": 1021,
-            "max": 1028.1
         }
     },
     "service": "weather"
