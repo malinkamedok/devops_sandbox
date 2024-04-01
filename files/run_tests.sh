@@ -19,10 +19,9 @@ error() {
 
 send_telegram_alert() {
     ### debug. all data should be taken from env
-    BOT_API_TOKEN="000000000:gegrergervreRGVFWERVevervEEWV"
-    CHAT_ID="-22822822822822"
-    CI_PROJECT_NAME="p.solovev"
-    MESSAGE=$(echo -e "Student: $CI_PROJECT_NAME\nService: $SERVICE_TYPE\nTests failed: $TESTS_FAILED.\n" | jq -sRr @uri)
+    # BOT_API_TOKEN="000000000:gegrergervreRGVFWERVevervEEWV"
+    # CHAT_ID="-22822822822822"
+    # CI_PROJECT_NAME="p.solovev"
 
     if [ -n "$BOT_API_TOKEN" ]; then
         curl -X POST "https://api.telegram.org/bot$BOT_API_TOKEN/sendMessage" -d "chat_id=$CHAT_ID&text=$MESSAGE" >/dev/null 2>/dev/null
@@ -112,6 +111,7 @@ stop_server() {
 
     kill $(pgrep -f "$COMMAND")
 
+    MESSAGE=$(echo -e "Student: $CI_PROJECT_NAME\nService: $SERVICE_TYPE\nTests failed: $TESTS_FAILED.\n" | jq -sRr @uri)
     send_telegram_alert
 
     prepare_artifacts
@@ -195,7 +195,7 @@ do
     echo "Real time: $ELAPSED_TIME"
 done
 
-if [ "$SERVICE_TYPE" == "weather" ] && [ "$TESTS_FAILED" -ne 0 ]; then
+if [ "$TESTS_FAILED" -ne 0 ]; then
     stop_server
     exit 1
 fi
@@ -236,6 +236,9 @@ do
 
             if [ $j -eq $MAX_ATTEMPTS ]; then
                 echo "Maximum number of attempts have been reached. Please try again tomorrow."
+
+                MESSAGE=$(echo -e "Student: $CI_PROJECT_NAME\nService: $SERVICE_TYPE\nTests failed: $TESTS_FAILED.\nAll API keys have exceeded. Tried $j times.\n" | jq -sRr @uri)
+                send_telegram_alert
 
                 stop_server
                 exit 1
