@@ -142,6 +142,11 @@ fi
 
 debug "SERVICE_TYPE=$SERVICE_TYPE"
 
+if [ $SERVICE_TYPE == "weather"] && [ -z "$API_KEY" ]; then
+    error "Environment variable API_KEY must not be empty. Add it to Settings > CI/CD > Variables"
+    exit 1
+fi
+
 info "Running static tests..."
 
 # Generating report
