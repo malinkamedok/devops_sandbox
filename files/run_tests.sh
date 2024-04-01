@@ -32,7 +32,7 @@ send_telegram_alert() {
 prepare_artifacts() {
     debug "Preparing job artifacts"
     mv results/$SERVICE_TYPE responses
-    rm -rf results
+    rm -rf results student_app
 }
 
 mkdir -p results/{weather,currency}
