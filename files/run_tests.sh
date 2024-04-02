@@ -17,6 +17,8 @@ error() {
     echo -e "${RED}[ERROR] $1${NC}"
 }
 
+PIPELINE_URL="<a href="$CI_PIPELINE_URL">Ссылка на пайплайн</a>"
+
 send_telegram_alert() {
     ### debug. all data should be taken from env
     # BOT_API_TOKEN="000000000:gegrergervreRGVFWERVevervEEWV"
@@ -110,7 +112,7 @@ stop_server() {
 
     kill $(pgrep -f "$COMMAND")
 
-    MESSAGE=$(echo -e "Student: $CI_PROJECT_NAME\nService: $SERVICE_TYPE\nTests failed: $TESTS_FAILED.\n" | jq -sRr @uri)
+    MESSAGE=$(echo -e "Student: $CI_PROJECT_NAME\nService: $SERVICE_TYPE\nTests failed: $TESTS_FAILED.\n$PIPELINE_URL\n" | jq -sRr @uri)
     send_telegram_alert
 
     prepare_artifacts
@@ -244,7 +246,7 @@ do
             if [ $j -eq $MAX_ATTEMPTS ]; then
                 echo "Maximum number of attempts have been reached. Please try again tomorrow."
 
-                MESSAGE=$(echo -e "Student: $CI_PROJECT_NAME\nService: $SERVICE_TYPE\nTests failed: $TESTS_FAILED.\nAll API keys have exceeded. Tried $j times.\n" | jq -sRr @uri)
+                MESSAGE=$(echo -e "Student: $CI_PROJECT_NAME\nService: $SERVICE_TYPE\nTests failed: $TESTS_FAILED.\nAll API keys have exceeded. Tried $j times.\n$PIPELINE_URL\n" | jq -sRr @uri)
                 send_telegram_alert
 
                 stop_server
