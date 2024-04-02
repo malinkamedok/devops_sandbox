@@ -26,7 +26,7 @@ send_telegram_alert() {
     # CI_PROJECT_NAME="p.solovev"
 
     if [ -n "$BOT_API_TOKEN" ]; then
-        curl -X POST "https://api.telegram.org/bot$BOT_API_TOKEN/sendMessage" -d "chat_id=$CHAT_ID&text=$MESSAGE" -d parse_mode=HTML >/dev/null 2>/dev/null
+        curl -X POST "https://api.telegram.org/bot$BOT_API_TOKEN/sendMessage" -d "chat_id=$CHAT_ID&text=$MESSAGE&parse_mode=HTML" >/dev/null 2>/dev/null
         echo
     fi
 }
