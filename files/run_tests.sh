@@ -17,7 +17,7 @@ error() {
     echo -e "${RED}[ERROR] $1${NC}"
 }
 
-PIPELINE_URL="<a href="$CI_PIPELINE_URL">Ссылка на пайплайн</a>"
+PIPELINE_URL="<a href=\"$CI_PIPELINE_URL\">Ссылка на пайплайн</a>"
 
 send_telegram_alert() {
     ### debug. all data should be taken from env
