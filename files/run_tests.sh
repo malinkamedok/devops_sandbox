@@ -230,7 +230,7 @@ do
         echo "Parameters: $PARAMS$YYYY-$MM-$DD"
     else
         ADDITIONAL=`cat $TESTCASES_DIR/$SERVICE_TYPE/additional.live`
-        RESPONSE_FILE="results/$SERVICE_TYPE/live_answer_$i.json"
+        RESPONSE_FILE="$TESTCASES_DIR/$SERVICE_TYPE/live_answer_$i.json"
         MAX_ATTEMPTS=7
 
         for ((j=1; j<=MAX_ATTEMPTS; j++)); do
@@ -284,7 +284,9 @@ done
 if [ $TESTS_FAILED -eq 0 ]; then
     info "Congratulations! All tests passed!"
 else
+    stop_server
     echo -e "${RED}Not all tests were passed. Keep going!${NC}"
+    exit 1
 fi
 
 stop_server
