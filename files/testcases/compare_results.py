@@ -2,7 +2,7 @@ import argparse
 import json
 import sys
 
-def is_valid_json(file_path):
+def is_valid_json(file_path: str) -> bool:
     try:
         with open(file_path, 'r') as file:
             json.load(file)
@@ -10,7 +10,16 @@ def is_valid_json(file_path):
     except json.JSONDecodeError:
         return False
 
-def deep_compare(obj1, obj2, threshold=0.5):
+def deep_compare(obj1: dict, obj2: dict, threshold=0.5) -> bool:
+    """
+    Args:
+        obj1 (dict): answer json
+        obj2 (dict): student json
+        threshold (float, optional): For avoiding accuracy problems. Defaults to 0.5.
+
+    Returns:
+        bool: are two json objects deeply equal?
+    """
     if isinstance(obj1, dict) and isinstance(obj2, dict):
         if len(obj1) != len(obj2):
             return False
@@ -47,10 +56,9 @@ def main():
         print("One or both JSON files were not found.")
         sys.exit(1)
 
-    if "data" not in student:
+    if student is not None and "data" not in student:
         print("Response should contain 'data' key")
         sys.exit(1)
-
 
     if deep_compare(answer["data"], student["data"]):
         print("The JSON files are deeply equal.")
