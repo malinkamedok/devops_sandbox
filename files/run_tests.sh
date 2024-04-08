@@ -9,6 +9,10 @@ debug() {
     echo -e "${YELLOW}[DEBUG] $1${NC}"
 }
 
+warn() {
+    echo -e "${YELLOW}[WARN] $1${NC}"
+}
+
 info() {
     echo -e "${GREEN}[INFO] $1${NC}"
 }
@@ -69,8 +73,8 @@ if [ -n "$PYTHON_FILE" ] && [ -f "$PYTHON_FILE" ]; then
         fi
         poetry install
     else
-        error "Neither requirements.txt nor pyproject.toml found. Skipping installation."
-        exit 1
+        warn "Neither requirements.txt nor pyproject.toml found. Skipping installation."
+        debug "Trying without dependencies"
     fi
     COMMAND="python $MAIN_FILE"
     MAIN_FILE=`realpath $PYTHON_FILE`
