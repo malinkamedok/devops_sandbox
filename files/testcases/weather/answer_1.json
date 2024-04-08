@@ -1,10 +1,10 @@
 {
     "data": {
         "temperature_c": {
-            "average": 9.503191489361702,
-            "median": 9.8,
-            "min": -7.7,
-            "max": 21.1
+            "average": 2.95,
+            "median": 2.95,
+            "min": 0,
+            "max": 6
         }
     },
     "service": "weather"
