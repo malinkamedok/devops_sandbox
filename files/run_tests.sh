@@ -44,7 +44,7 @@ prepare_artifacts() {
 mkdir -p results/{weather,currency}
 
 TESTCASES_DIR="/testcases"
-PYTHON_FILE=$(find . -name "main.py" -type f | grep -v 'venv')
+PYTHON_FILE=$(find . -name "main.py" -type f | grep -v 'venv' | sort -n | head -n 1)
 GO_FILE=`find . -name "main.go" -type f`
 MAIN_FILE=""
 COMMAND=""
@@ -53,6 +53,8 @@ if [ -z "$PYTHON_FILE" ] && [ -z "$GO_FILE" ]; then
     error "Both PYTHON_FILE and GO_FILE are empty. Exiting the program."
     exit 1
 fi
+
+debug "$PYTHON_FILE"
 
 if [ -n "$PYTHON_FILE" ] && [ -f "$PYTHON_FILE" ]; then
     debug "Found Python application..."
@@ -77,6 +79,7 @@ if [ -n "$PYTHON_FILE" ] && [ -f "$PYTHON_FILE" ]; then
         debug "Trying without dependencies"
     fi
     COMMAND="python $MAIN_FILE"
+    debug "command = $COMMAND"
     MAIN_FILE=`realpath $PYTHON_FILE`
 fi
 
