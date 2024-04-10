@@ -29,7 +29,7 @@ send_telegram_alert() {
     # CHAT_ID="-22822822822822"
     # CI_PROJECT_NAME="p.solovev"
 
-    if [ -n "$BOT_API_TOKEN" ]; then
+    if [ -n "$BOT_API_TOKEN" ] && [ "$SEND_TG_ALERT" = true ]; then
         curl -X POST "https://api.telegram.org/bot$BOT_API_TOKEN/sendMessage" -d "chat_id=$CHAT_ID&text=$MESSAGE&parse_mode=HTML" >/dev/null 2>/dev/null
         echo
     fi
