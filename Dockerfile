@@ -20,7 +20,8 @@ RUN apt-get install --no-install-recommends -y -q \
     unixodbc-dev=2.3.12-1ubuntu0.23.10.1 \
     jq=1.6-3 \
     bc=1.07.1-3build1 \
-    xmlstarlet=1.6.1-3
+    xmlstarlet=1.6.1-3 \
+    systemd=253.5-1ubuntu6.1
 
 # Install Go
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
