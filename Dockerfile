@@ -38,6 +38,8 @@ RUN apt-get install --no-install-recommends -y -q \
 
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python${PYTHON_VERSION} 2 && poetry config virtualenvs.create false
 
+RUN rm -f /usr/bin/python3 && ln -s /usr/bin/python${PYTHON_VERSION} /usr/bin/python3
+
 COPY files/run_tests.sh /usr/bin/run_tests
 RUN chmod +x /usr/bin/run_tests
 
