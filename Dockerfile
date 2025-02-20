@@ -15,7 +15,7 @@ RUN apt-get install --no-install-recommends -y -q \
     git \
     make \
     gcc \
-    g++= \
+    g++ \
     gnupg \
     unixodbc-dev \
     jq \
