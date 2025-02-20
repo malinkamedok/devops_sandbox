@@ -74,6 +74,7 @@ if [ -n "$PYTHON_FILE" ] && [ -f "$PYTHON_FILE" ]; then
             exit 1
         fi
         poetry install
+        poetry shell
     else
         warn "Neither requirements.txt nor pyproject.toml found. Skipping installation."
         debug "Trying without dependencies"
