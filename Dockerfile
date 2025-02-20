@@ -1,4 +1,4 @@
-FROM ubuntu:23.10@sha256:50ec5c3a1814f5ef82a564fae94f6b4c5d550bb71614ba6cfe8fadbd8ada9f12
+FROM ubuntu:24.04
 ARG GO_VERSION=go1.22.1
 ARG PYTHON_VERSION=3.12
 RUN apt-get update -y -q && apt-get upgrade -y -q
@@ -9,18 +9,18 @@ ENV PYTHONUNBUFFERED 1
 ENV TZ Europe/Moscow
 
 RUN apt-get install --no-install-recommends -y -q \
-    curl=8.2.1-1ubuntu3.3 \
-    build-essential=12.10ubuntu1 \
-    ca-certificates=20230311ubuntu1 \
-    git=1:2.40.1-1ubuntu1 \
-    make=4.3-4.1build1 \
-    gcc=4:13.2.0-1ubuntu1 \
-    g++=4:13.2.0-1ubuntu1 \
-    gnupg=2.2.40-1.1ubuntu1 \
-    unixodbc-dev=2.3.12-1ubuntu0.23.10.1 \
-    jq=1.6-3 \
-    bc=1.07.1-3build1 \
-    xmlstarlet=1.6.1-3
+    curl \
+    build-essential \
+    ca-certificates \
+    git \
+    make \
+    gcc \
+    g++= \
+    gnupg \
+    unixodbc-dev \
+    jq \
+    bc \
+    xmlstarlet
 
 # Install Go
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -30,9 +30,9 @@ ENV PATH $PATH:/usr/local/go/bin
 
 ## Install Python
 RUN apt-get install --no-install-recommends -y -q \
-  python${PYTHON_VERSION}-full=3.12.0-1 \
-  python3-pip=23.2+dfsg-1ubuntu0.1 \
-  python3-poetry=1.6.1+dfsg-2  \
+  python${PYTHON_VERSION}-full \
+  python3-pip \
+  python3-poetry  \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
