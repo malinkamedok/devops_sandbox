@@ -68,13 +68,25 @@ if [ -n "$PYTHON_FILE" ] && [ -f "$PYTHON_FILE" ]; then
         pip install -r requirements.txt
     # Check if pyproject.toml exists in the current directory
     elif [ -f pyproject.toml ]; then
-        debug "pyproject.toml found. Installing dependencies via Poetry..."
-        if ! command -v poetry &> /dev/null; then
-            error "Poetry not found. Exiting..."
-            exit 1
+        if grep -q "tool.poetry" pyproject.toml || [ -f poetry.lock ]; then
+            debug "pyproject.toml found. Installing dependencies via Poetry..."
+            if ! command -v poetry &> /dev/null; then
+                error "Poetry not found. Exiting..."
+                exit 1
+            fi
+            poetry install
+            poetry shell
+        else
+            debug "pyproject.toml found. Installing dependencies via uv..."
+            if ! command -v uv &> /dev/null; then
+                error "uv not found. Exiting..."
+                exit 1
+            fi
+            rm -rf venv/ .venv/
+            uv venv venv
+            source ./venv/bin/activate
+            uv sync --all-extras --active
         fi
-        poetry install
-        poetry shell
     else
         warn "Neither requirements.txt nor pyproject.toml found. Skipping installation."
         debug "Trying without dependencies"
