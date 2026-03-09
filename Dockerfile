@@ -25,7 +25,7 @@ RUN apt-get install --no-install-recommends -y -q \
 # Install Go
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN curl -s https://dl.google.com/go/${GO_VERSION}.linux-amd64.tar.gz | tar xz -C /usr/local
-ENV PATH=$PATH:/usr/local/go/bin
+ENV PATH="$PATH:/usr/local/go/bin"
 
 
 ## Install Python

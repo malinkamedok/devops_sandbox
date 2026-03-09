@@ -2,8 +2,7 @@ name: Lint Docker Image
 
 on:
   push:
-    branches:
-      - '*'
+  pull_requets:
 
 jobs:
   lint:
