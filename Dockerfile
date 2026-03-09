@@ -49,5 +49,3 @@ COPY files/run_tests.sh /usr/bin/run_tests
 RUN chmod +x /usr/bin/run_tests
 
 COPY files/testcases /testcases
-
-CMD ["sleep", "infinity"]
