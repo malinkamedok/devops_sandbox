@@ -3,10 +3,10 @@ ARG GO_VERSION=go1.22.1
 ARG PYTHON_VERSION=3.12
 RUN apt-get update -y -q && apt-get upgrade -y -q
 
-ENV DEBIAN_FRONTEND noninteractive
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV TZ Europe/Moscow
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV TZ=Europe/Moscow
 
 RUN apt-get install --no-install-recommends -y -q \
     curl \
@@ -25,7 +25,7 @@ RUN apt-get install --no-install-recommends -y -q \
 # Install Go
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN curl -s https://dl.google.com/go/${GO_VERSION}.linux-amd64.tar.gz | tar xz -C /usr/local
-ENV PATH $PATH:/usr/local/go/bin
+ENV PATH=$PATH:/usr/local/go/bin
 
 
 ## Install Python
@@ -40,7 +40,14 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python${PYTHON
 
 RUN rm -f /usr/bin/python3 && ln -s /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 && poetry config virtualenvs.create true
 
+## Install uv
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
+RUN sh /uv-installer.sh && rm /uv-installer.sh
+ENV PATH="/root/.local/bin/:$PATH"
+
 COPY files/run_tests.sh /usr/bin/run_tests
 RUN chmod +x /usr/bin/run_tests
 
 COPY files/testcases /testcases
+
+CMD ["sleep", "infinity"]
